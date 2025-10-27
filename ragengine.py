@@ -5,10 +5,10 @@ from langchain_community.document_loaders import DirectoryLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
-from langchain.chains import create_retrieval_chain
+from langchain_core.prompts import ChatPromptTemplate
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.chains.retrieval import create_retrieval_chain
 import os
-
 
 # === Function: Build Chroma Vectorstore from local documents ===
 def build_chroma_vectorstore(folder_path="hr_docs"):
@@ -38,7 +38,6 @@ def build_chroma_vectorstore(folder_path="hr_docs"):
         persist_directory="chroma_db"  # folder where vectors are saved
     )
 
-    vectorstore.persist()
     print("💾 Chroma vectorstore created and saved at ./chroma_db")
     return vectorstore
 
@@ -72,8 +71,11 @@ def create_rag_chain():
         ("human", "{input}")
     ])
 
+    # Create the document chain
+    question_answer_chain = create_stuff_documents_chain(llm, prompt)
+    
     # Build retrieval chain (RAG)
-    rag_chain = create_retrieval_chain(retriever, llm, prompt)
+    rag_chain = create_retrieval_chain(retriever, question_answer_chain)
 
     return rag_chain
 
